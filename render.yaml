@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: baumpate-backend
+    runtime: python
+    buildCommand: pip install uv && uv sync --no-dev
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: INGEST_SHARED_SECRET
+        sync: false
+      - key: OPEN_METEO_BASE_URL
+        value: https://api.open-meteo.com/v1
+      - key: KARLSRUHE_LAT
+        value: "49.0069"
+      - key: KARLSRUHE_LON
+        value: "8.4037"
