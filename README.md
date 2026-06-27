@@ -15,7 +15,7 @@ A public-facing dashboard for Karlsruhe's IoT tree-humidity sensor network. Buil
 ## Tech Stack
 
 | Concern | Library |
-|---|---|
+| --- | --- |
 | Framework | React 18 + Vite + TypeScript |
 | Map | react-map-gl v8 + MapLibre GL JS v5 |
 | Map tiles | Stadia Maps "Alidade Smooth Dark" |
@@ -23,7 +23,7 @@ A public-facing dashboard for Karlsruhe's IoT tree-humidity sensor network. Buil
 | Animation | Framer Motion |
 | Styling | Tailwind CSS v3 |
 | Data | Supabase (mock data by default) |
-| Deployment | Vercel + GitHub Actions |
+| Deployment | Netlify + GitHub Actions |
 
 ## Getting Started
 
@@ -38,7 +38,7 @@ Open [http://localhost:5173](http://localhost:5173).
 ## Environment Variables
 
 | Variable | Description |
-|---|---|
+| --- | --- |
 | `VITE_USE_MOCK_DATA` | `true` to use local mock data (default), `false` for Supabase |
 | `VITE_SUPABASE_URL` | Your Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key |
@@ -50,20 +50,37 @@ Open [http://localhost:5173](http://localhost:5173).
 2. Run `docs/schema.sql` in the Supabase SQL editor
 3. Set `VITE_USE_MOCK_DATA=false` and add your `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 
-## Deployment (Vercel)
+## Deployment (Netlify)
+
+**Quick deploy (drag & drop):**
 
 ```bash
-npm install -g vercel
-vercel link          # creates .vercel/project.json with org/project IDs
-vercel env add VITE_USE_MOCK_DATA production
-vercel env add VITE_STADIA_API_KEY production
-# Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY as well
+npm run build
+# Drag the dist/ folder to app.netlify.com/drop
 ```
 
-Then add these GitHub Secrets for the CI/CD pipeline:
-- `VERCEL_TOKEN` — from [vercel.com/account/tokens](https://vercel.com/account/tokens)
-- `VERCEL_ORG_ID` — from `.vercel/project.json`
-- `VERCEL_PROJECT_ID` — from `.vercel/project.json`
+**CLI deploy:**
+
+```bash
+npm install -g netlify-cli
+netlify login
+netlify init        # link to your Netlify site
+netlify deploy --prod
+```
+
+**GitHub auto-deploy:**
+
+1. Connect your repo at [app.netlify.com](https://app.netlify.com/start)
+2. Build command: `npm run build` · Publish dir: `dist`
+3. Add environment variables in Netlify dashboard → Site settings → Environment variables:
+   - `VITE_USE_MOCK_DATA` = `true`
+   - `VITE_STADIA_API_KEY` = your key
+   - `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (when connecting Supabase)
+
+**GitHub Actions CI/CD** — add these GitHub Secrets:
+
+- `NETLIFY_AUTH_TOKEN` — from [app.netlify.com/user/applications](https://app.netlify.com/user/applications)
+- `NETLIFY_SITE_ID` — from Netlify site settings → General → Site ID
 - `STADIA_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`
 
 PRs get automatic preview deployments. Merging to `main` triggers production deploy.
