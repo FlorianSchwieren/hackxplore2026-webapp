@@ -1,0 +1,25 @@
+- Karlsruhe city installs a lot of small ESP32 microcontroller and a capacitive soil moisture sensor to sensor the humidity of public trees. The goal is to use the data to efficiently assign resources. There is also a gamified mobile app but this is not done by you. 
+- The goal is to build a dashboard website for mobile and desktop devices for public audience. Similar to https://world.helium.com/en/network/mobile. I also want to follow the design of this website https://world.helium.com/en/network/mobile
+- The base entities of the websites are trees and humidity sensors. 
+- Sensor are persistently located at one specific location and cover one or more trees
+- Main Page (Desktop): Left you see statistics about the usage of the platform. 
+- A number of daily users with a chart, total sensors installed with a chart, collected data points with change over 1 month and registered trees with a chart. Underneath there is a is a button "more network stats". In the background you already see the map centered to karslruhe (49.0005022,8.3841496)
+- Main Page (Mobile): You see half of the statics in the panel that comes from the botton and you can close it. The button to toggle is on the bottom right. You see the same data as desktop user. you also see the map in the background
+- Main Page: There is a search bar on top where you can look for sensor names or locations. Should jump to the location once submitted. Should suggest entries
+- On the map are the trees and sensors displayed. These geojson is fetched from a supabase data and i will provide the url of it
+- Currently the website is only for karlsruhe because it is a prototyp
+- You can zoom and move the map as you want. Use openstreet map and a very minimalistic version of it with not too much information. We want to see where trees are based on coordinates so we don't need informations like stores or similar.
+- Trees have a name, id, assign sensor if available, chart of the humidity history, tree type, user owner account name if exists, current humidity value, years of age
+- Sensors have a name and id and then covering one or multiple trees and then last activity, history of the data sensor values, installed since data, model type, status active/inactive.
+- On the map there is a button where you can filter for active/inactive sensors and then also for trees if there a are covered by sensor or not and there tree status, (dry, normal, ... add better category names)
+- On mobile a panels opens for this specific entity (tree or sensor)
+- The second page is a only data page showing statistics like also the one that are shown on the website but addional informations. Stats about the sensor model types, inactive and active sensors percentage, tree status distribution (pie chart), most active user leaderboard (user with the most assigned trees), best covered area by district in karslruhe
+- Copy the design of https://world.helium.com/en/network/mobile into this repository for development first
+- I want to build a react app deployed on vercel. Build a pipeline to deploy it.
+- I want a clean project struture with detailed plans for every page and design decision.
+- On the main page there should be weather forecast insights, we will fake it for now and harcode it. It shows general weather forecast with the relation to moisture of the trees. Add this information also to each tree detail panel page where you forecast if someone should take actions and show that evidence comes from weather, sensor and machine learning
+- Choose a cool svg for the sensor and the trees for plotting it on the map
+- Important is the responsivness of the application
+- The data that is coming from supabase are the tree and sensor information and we will connect it later to supabase. You can mock the data for development first. But keep the schema
+- Use best practices in REACT to make a clean design and make the performant. It should load very fast. Maybe it makes more sense to publish it with a CDN.
+- Make a clean design on the website and change the colors of the map to use grey and white expect of the trees and sensors. Similar colors like UBER uses. Maybe we can also use the same map that https://world.helium.com/en/network/mobile is using for the map. 
