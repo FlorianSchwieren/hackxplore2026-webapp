@@ -14,7 +14,6 @@ from app.seed.users import (
 CO_PARTNER_COUNT = 10
 TREE_COUNT = 5
 MEMBERS_PER_TREE = 2
-TREE_NAME_PREFIX = "TeamDemo-"
 
 CO_PARTNER_IDS = [seed_uuid(f"user:team-copartner:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
 CO_PARTNER_NAMES = [
@@ -38,14 +37,28 @@ def _ensure_users(session: Session) -> None:
         _upsert_profile(session, partner_id, CO_PARTNER_NAMES[index], email, False)
 
 
+def _owned_tree_ids(session: Session) -> list[str]:
+    rows = session.execute(
+        text(
+            """
+            select t.id
+            from tree_partnerships tp
+            join trees t on t.id = tp.tree_id
+            where tp.user_id = :user_id
+              and tp.role = 'owner'
+              and tp.active_to is null
+            order by t.external_id
+            """
+        ),
+        {"user_id": TEAM_DEMO_USER_ID},
+    ).mappings().all()
+    return [str(row["id"]) for row in rows]
+
+
 def _claim_tree(session: Session, slot: int) -> str:
-    tree_name = f"{TREE_NAME_PREFIX}{slot}"
-    existing = session.execute(
-        text("select id from trees where name = :name"),
-        {"name": tree_name},
-    ).mappings().first()
-    if existing:
-        return str(existing["id"])
+    owned = _owned_tree_ids(session)
+    if len(owned) >= slot:
+        return owned[slot - 1]
 
     row = session.execute(
         text(
@@ -56,13 +69,11 @@ def _claim_tree(session: Session, slot: int) -> str:
             left join tree_partnerships tp on tp.tree_id = t.id and tp.active_to is null
             where t.stadtteil in ('Innenstadt-Ost', 'Innenstadt-West')
               and coalesce(t.name, '') <> 'Berta'
-              and coalesce(t.name, '') not like :prefix || '%'
               and tp.id is null
             order by t.external_id
             limit 1
             """
         ),
-        {"prefix": TREE_NAME_PREFIX},
     ).mappings().first()
     if not row:
         row = session.execute(
@@ -71,27 +82,23 @@ def _claim_tree(session: Session, slot: int) -> str:
                 select t.id
                 from trees t
                 join sensors s on s.tree_id = t.id and s.is_real = false
+                left join tree_partnerships tp on tp.tree_id = t.id
+                  and tp.user_id = :user_id and tp.active_to is null
                 where t.stadtteil in ('Innenstadt-Ost', 'Innenstadt-West')
                   and coalesce(t.name, '') <> 'Berta'
-                  and coalesce(t.name, '') not like :prefix || '%'
+                  and tp.id is null
                 order by t.external_id
                 offset :offset
                 limit 1
                 """
             ),
-            {"prefix": TREE_NAME_PREFIX, "offset": slot + 400},
+            {"user_id": TEAM_DEMO_USER_ID, "offset": slot + 400},
         ).mappings().one()
 
     tree_id = str(row["id"])
     session.execute(
-        text(
-            """
-            update trees
-            set name = :name, status = 'adopted'
-            where id = :tree_id
-            """
-        ),
-        {"name": tree_name, "tree_id": tree_id},
+        text("update trees set status = 'adopted' where id = :tree_id"),
+        {"tree_id": tree_id},
     )
     return tree_id
 
