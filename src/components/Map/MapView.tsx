@@ -10,9 +10,13 @@ import SensorMarker from './SensorMarker'
 import ClusterMarker from './ClusterMarker'
 import MapFilterPanel from './MapFilterPanel'
 
-const MAP_STYLE =
-  `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json` +
-  (import.meta.env.VITE_STADIA_API_KEY ? `?api_key=${import.meta.env.VITE_STADIA_API_KEY}` : '')
+const STADIA_KEY = import.meta.env.VITE_STADIA_API_KEY as string | undefined
+
+// Use Stadia dark style when API key is present, otherwise fall back to
+// OpenFreeMap (free, no auth, works on any domain)
+const MAP_STYLE = STADIA_KEY
+  ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json?api_key=${STADIA_KEY}`
+  : 'https://tiles.openfreemap.org/styles/liberty'
 
 const KARLSRUHE = { longitude: 8.3841496, latitude: 49.0005022 }
 
