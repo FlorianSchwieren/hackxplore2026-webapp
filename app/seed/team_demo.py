@@ -14,6 +14,8 @@ from app.seed.users import (
 CO_PARTNER_COUNT = 10
 TREE_COUNT = 5
 MEMBERS_PER_TREE = 2
+NEARBY_MIN_METERS = 150
+NEARBY_MAX_METERS = 1000
 
 CO_PARTNER_IDS = [seed_uuid(f"user:team-copartner:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
 CO_PARTNER_NAMES = [
@@ -161,6 +163,134 @@ def _ensure_member(session: Session, tree_id: str, user_id, streak: int) -> None
     )
 
 
+def _partner_tree_target(partner_index: int) -> int:
+    return 2 + (partner_index % 5)
+
+
+def _active_partnership_count(session: Session, user_id) -> int:
+    row = session.execute(
+        text(
+            """
+            select count(*) as count
+            from tree_partnerships
+            where user_id = :user_id
+              and (active_to is null or active_to >= current_date)
+            """
+        ),
+        {"user_id": user_id},
+    ).mappings().one()
+    return int(row["count"])
+
+
+def _anchor_tree_for_partner(session: Session, partner_id) -> str | None:
+    row = session.execute(
+        text(
+            """
+            select tp.tree_id
+            from tree_partnerships tp
+            join tree_partnerships team on team.tree_id = tp.tree_id
+            where tp.user_id = :partner_id
+              and team.user_id = :team_id
+              and team.role = 'owner'
+              and tp.active_to is null
+              and team.active_to is null
+            order by tp.created_at
+            limit 1
+            """
+        ),
+        {"partner_id": partner_id, "team_id": TEAM_DEMO_USER_ID},
+    ).mappings().first()
+    return str(row["tree_id"]) if row else None
+
+
+def _claim_nearby_tree(
+    session: Session,
+    partner_id,
+    anchor_tree_id: str,
+    pick_offset: int,
+) -> str | None:
+    row = session.execute(
+        text(
+            """
+            select t.id
+            from trees t
+            join trees anchor on anchor.id = :anchor_id
+            left join tree_partnerships owner_tp
+              on owner_tp.tree_id = t.id
+             and owner_tp.role = 'owner'
+             and owner_tp.active_to is null
+            left join tree_partnerships partner_tp
+              on partner_tp.tree_id = t.id
+             and partner_tp.user_id = :partner_id
+             and (partner_tp.active_to is null or partner_tp.active_to >= current_date)
+            where partner_tp.id is null
+              and owner_tp.id is null
+              and t.id <> :anchor_id
+              and coalesce(t.name, '') <> 'Berta'
+              and st_dwithin(t.geom::geography, anchor.geom::geography, :max_m)
+              and st_distance(t.geom::geography, anchor.geom::geography) >= :min_m
+            order by st_distance(t.geom::geography, anchor.geom::geography), t.external_id
+            offset :pick_offset
+            limit 1
+            """
+        ),
+        {
+            "anchor_id": anchor_tree_id,
+            "partner_id": partner_id,
+            "min_m": NEARBY_MIN_METERS,
+            "max_m": NEARBY_MAX_METERS,
+            "pick_offset": pick_offset,
+        },
+    ).mappings().first()
+    return str(row["id"]) if row else None
+
+
+def _ensure_partner_owner(session: Session, tree_id: str, partner_id, streak: int) -> None:
+    session.execute(
+        text(
+            """
+            insert into tree_partnerships (tree_id, user_id, role, streak)
+            values (:tree_id, :user_id, 'owner', :streak)
+            on conflict do nothing
+            """
+        ),
+        {"tree_id": tree_id, "user_id": partner_id, "streak": streak},
+    )
+    session.execute(
+        text(
+            """
+            update tree_partnerships
+            set role = 'owner', streak = :streak, active_to = null, streak_frozen = false
+            where tree_id = :tree_id and user_id = :user_id
+            """
+        ),
+        {"tree_id": tree_id, "user_id": partner_id, "streak": streak},
+    )
+    session.execute(
+        text("update trees set status = 'adopted' where id = :tree_id"),
+        {"tree_id": tree_id},
+    )
+
+
+def _expand_partner_fleets(session: Session) -> int:
+    created = 0
+    for index, partner_id in enumerate(CO_PARTNER_IDS):
+        target = _partner_tree_target(index)
+        anchor_tree_id = _anchor_tree_for_partner(session, partner_id)
+        if not anchor_tree_id:
+            continue
+        pick_offset = 0
+        while _active_partnership_count(session, partner_id) < target:
+            tree_id = _claim_nearby_tree(session, partner_id, anchor_tree_id, pick_offset)
+            if not tree_id:
+                break
+            streak = 4 + (index % 7) + pick_offset
+            _ensure_partner_owner(session, tree_id, partner_id, streak)
+            created += 1
+            pick_offset += 1
+    return created
+
+
 def _recompute_scores(session: Session) -> None:
     user_ids = [TEAM_DEMO_USER_ID, *CO_PARTNER_IDS]
     session.execute(
@@ -191,6 +321,7 @@ def seed(session: Session) -> int:
         _ensure_member(session, tree_id, member_a, owner_streak - 1)
         _ensure_member(session, tree_id, member_b, owner_streak - 2)
 
+    created = _expand_partner_fleets(session)
     _recompute_scores(session)
     session.commit()
-    return TREE_COUNT
+    return TREE_COUNT + created

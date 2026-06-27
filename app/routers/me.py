@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlmodel import Session
 
@@ -8,6 +8,7 @@ from app.auth import CurrentUser, require_user
 from app.db import get_session
 from app.mapping import title_for_tree
 from app.schemas import (
+    CoPartnerAllTreeOut,
     CoPartnerOut,
     CoPartnerSharedTreeOut,
     CoPartnersResponse,
@@ -123,8 +124,9 @@ def get_my_trees(
     )
 
 
-@router.get("/me/co-partners", response_model=CoPartnersResponse)
+@router.get("/me/co-partners", response_model=CoPartnersResponse, response_model_exclude_none=True)
 def get_co_partners(
+    include_all_trees: bool = Query(default=False, description="Include every tree each co-partner tends"),
     user: CurrentUser = Depends(require_user),
     session: Session = Depends(get_session),
 ) -> CoPartnersResponse:
@@ -170,6 +172,54 @@ def get_co_partners(
             )
         )
         partner.shared_trees = len(partner.trees)
+
+    if include_all_trees and grouped:
+        all_rows = session.execute(
+            text(
+                """
+                with co_partner_ids as (
+                    select distinct tp2.user_id as id
+                    from tree_partnerships tp1
+                    join tree_partnerships tp2
+                      on tp1.tree_id = tp2.tree_id
+                     and tp2.user_id <> tp1.user_id
+                     and (tp2.active_to is null or tp2.active_to >= current_date)
+                    where tp1.user_id = :user_id
+                      and (tp1.active_to is null or tp1.active_to >= current_date)
+                )
+                select cp.id as user_id, tp.tree_id, t.name, t.external_id,
+                       tp.role as their_role, mp.role as your_role
+                from co_partner_ids cp
+                join tree_partnerships tp
+                  on tp.user_id = cp.id
+                 and (tp.active_to is null or tp.active_to >= current_date)
+                join trees t on t.id = tp.tree_id
+                left join tree_partnerships mp
+                  on mp.tree_id = tp.tree_id
+                 and mp.user_id = :user_id
+                 and (mp.active_to is null or mp.active_to >= current_date)
+                order by cp.id, t.external_id
+                """
+            ),
+            {"user_id": user.id},
+        ).mappings().all()
+        all_by_partner: dict[str, list[CoPartnerAllTreeOut]] = {partner_id: [] for partner_id in grouped}
+        for row in all_rows:
+            partner_id = str(row["user_id"])
+            if partner_id not in all_by_partner:
+                continue
+            your_role = row["your_role"]
+            all_by_partner[partner_id].append(
+                CoPartnerAllTreeOut(
+                    tree_id=row["tree_id"],
+                    name=title_for_tree(row["name"], row["external_id"]),
+                    their_role=row["their_role"],
+                    shared=your_role is not None,
+                    your_role=your_role,
+                )
+            )
+        for partner_id, partner in grouped.items():
+            partner.all_trees = all_by_partner.get(partner_id, [])
 
     co_partners = sorted(
         grouped.values(),
