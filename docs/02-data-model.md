@@ -188,7 +188,7 @@ Constraints / rules (enforced in FastAPI, see [docs/05](05-scoring-and-gamificat
 
 ### 2.10 Deferred / not built (frontend assumptions we deliberately don't back)
 - **`watering_events` / liters** — **dropped.** A soil sensor can't measure water *volume*; the app shows the **moisture curve** ([`GET /trees/{id}/readings`](03-api-contract.md) §4) instead of liters. ([docs/08](08-frontend-data-mapping.md) §5)
-- **`friendships` / friends leaderboard / user‑level `streak_days`** — **deferred** (social feature, not part of the city‑transparency value). `score` (= Σ per‑tree streaks) is the gamification number.
+- **`friendships` / global friends leaderboard / user‑level `streak_days`** — **deferred** (social feature, not part of the city‑transparency value). `score` (= Σ per‑tree streaks) is the gamification number. **Co-partners** on shared trees are derived from `tree_partnerships` via `GET /me/co-partners` (no extra table).
 - **`teams` (named groups)** — a "team" = the set of partnerships on a tree, so no table is needed. If named/invite‑managed teams are wanted later: `teams(id, tree_id, name, created_by)` + `team_members`.
 
 ---

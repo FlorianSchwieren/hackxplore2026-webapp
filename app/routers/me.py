@@ -8,6 +8,9 @@ from app.auth import CurrentUser, require_user
 from app.db import get_session
 from app.mapping import title_for_tree
 from app.schemas import (
+    CoPartnerOut,
+    CoPartnerSharedTreeOut,
+    CoPartnersResponse,
     MyTreeOut,
     MyTreesResponse,
     NotificationOut,
@@ -118,6 +121,61 @@ def get_my_trees(
         longest_streak=max((tree.streak for tree in trees), default=0),
         trees=trees,
     )
+
+
+@router.get("/me/co-partners", response_model=CoPartnersResponse)
+def get_co_partners(
+    user: CurrentUser = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> CoPartnersResponse:
+    rows = session.execute(
+        text(
+            """
+            select p.id as user_id, p.display_name, p.avatar_url,
+                   tp1.tree_id, t.name, t.external_id,
+                   tp1.role as your_role, tp2.role as their_role
+            from tree_partnerships tp1
+            join tree_partnerships tp2
+              on tp1.tree_id = tp2.tree_id
+             and tp2.user_id <> tp1.user_id
+             and (tp2.active_to is null or tp2.active_to >= current_date)
+            join profiles p on p.id = tp2.user_id
+            join trees t on t.id = tp1.tree_id
+            where tp1.user_id = :user_id
+              and (tp1.active_to is null or tp1.active_to >= current_date)
+            order by p.display_name, t.external_id
+            """
+        ),
+        {"user_id": user.id},
+    ).mappings().all()
+
+    grouped: dict[str, CoPartnerOut] = {}
+    for row in rows:
+        partner_id = str(row["user_id"])
+        if partner_id not in grouped:
+            grouped[partner_id] = CoPartnerOut(
+                user_id=row["user_id"],
+                display_name=row["display_name"],
+                avatar_url=row.get("avatar_url"),
+                shared_trees=0,
+                trees=[],
+            )
+        partner = grouped[partner_id]
+        partner.trees.append(
+            CoPartnerSharedTreeOut(
+                tree_id=row["tree_id"],
+                name=title_for_tree(row["name"], row["external_id"]),
+                your_role=row["your_role"],
+                their_role=row["their_role"],
+            )
+        )
+        partner.shared_trees = len(partner.trees)
+
+    co_partners = sorted(
+        grouped.values(),
+        key=lambda partner: (-partner.shared_trees, partner.display_name.lower()),
+    )
+    return CoPartnersResponse(count=len(co_partners), co_partners=co_partners)
 
 
 @router.get("/notifications", response_model=list[NotificationOut])

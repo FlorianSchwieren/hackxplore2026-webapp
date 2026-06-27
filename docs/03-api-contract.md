@@ -87,6 +87,15 @@ Auth: user. → `200`
     "health_state":"healthy","moisture_pct":42.0 } ] }
 ```
 
+### `GET /me/co-partners` — users who share at least one active tree partnership
+Auth: user. Returns other profiles linked through any shared active `tree_partnerships` row (owner, member, or caretaker). Sorted by `shared_trees` desc, then `display_name`.
+→ `200`
+```json
+{ "count": 1, "co_partners": [
+  { "user_id":"…", "display_name":"Mia", "avatar_url": null, "shared_trees": 1,
+    "trees": [ { "tree_id":"…", "name":"Baum #100234", "your_role":"owner", "their_role":"member" } ] } ] }
+```
+
 ### `POST /partnerships/{id}/invite` — invite a friend (collaborative team)
 Auth: owner of the partnership. Body `{ "email": "friend@…" }` → creates a `member` partnership for that user. (Only way onto an adopted tree besides coverage.)
 → `201 { "partnership": { …, "role":"member" } }`
@@ -122,6 +131,7 @@ Behaviour: creates a `caretaker` partnership for `[from,to]`, sets absence `cove
 
 ### `GET /me` → `200 { "id":"…","display_name":"Alex","score":1001,"notify_help_opt_in":true }`
 ### `PATCH /me` → update `display_name`, `notify_help_opt_in`.
+### `GET /me/co-partners` — users sharing ≥1 active tree partnership (see §5).
 ### `PATCH /trees/{id}/name` — name your tree. Body `{ "name":"Berta" }`. Auth: a partner of the tree.
 
 ---
@@ -188,6 +198,7 @@ Pattern: FastAPI writes the row (service role) → Postgres change → Supabase 
 | PATCH | `/trees/{id}/name` | user | name a tree |
 | POST | `/partnerships` | user | adopt |
 | GET | `/me/trees` | user | homepage |
+| GET | `/me/co-partners` | user | shared-tree co-partners |
 | POST | `/partnerships/{id}/invite` | owner | invite friend |
 | DELETE | `/partnerships/{id}` | user | leave |
 | POST | `/absences` | user | declare absence |
@@ -214,7 +225,7 @@ Endpoints that serve the app's models return **app‑shaped** fields so the coll
 ### `GET /notifications` → `[ { "id","title","body","received_at","is_read" } ]`
 ### `PATCH /notifications/{id}` — body `{ "is_read": true }`
 
-> **Dropped/deferred** (see [docs/08](08-frontend-data-mapping.md) §§5–6): no liters / `watering_events` — a soil sensor can't measure volume, so the app shows the **moisture curve** via `GET /trees/{id}/readings`; no friends/leaderboard endpoints; no user‑level `streak_days` (`score` is the gamification number).
+> **Dropped/deferred** (see [docs/08](08-frontend-data-mapping.md) §§5–6): no liters / `watering_events` — a soil sensor can't measure volume, so the app shows the **moisture curve** via `GET /trees/{id}/readings`; no `friendships` table or leaderboard; no user‑level `streak_days` (`score` is the gamification number). Co-partners on shared trees are listed via `GET /me/co-partners`.
 
 ---
 

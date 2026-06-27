@@ -114,7 +114,7 @@ Fill in `.env` (get values from team lead or Supabase Dashboard → **Project Se
 # FastAPI
 API_PREFIX=/api/v1
 ENVIRONMENT=development
-DEV_AUTH_DISABLED=true          # local dev: skip JWT (use false in prod)
+DEV_AUTH_DISABLED=true          # local dev: skip JWT — acts as Taylor Team (see §7.1)
 
 # Supabase / Postgres
 SUPABASE_URL=https://<project-ref>.supabase.co
@@ -218,7 +218,35 @@ npm run dev
 | Dashboard stats    | http://localhost:5173/stats                 |
 | Tests              | `make test`                                 |
 
-Expected stats (after seed): ~**4,377 trees**, ~**1,001 sensors**, ~**302 users**.
+Expected stats (after seed): ~**4,377 trees**, ~**1,001 sensors**, ~**312 users**.
+
+### 7.1 Team demo profile (no JWT needed)
+
+With `DEV_AUTH_DISABLED=true`, every **user** route runs as **Taylor Team** — a seeded profile with **5 trees** and **10 co-partners**. No `Authorization` header required.
+
+Seed (included in `make seed`, or alone):
+
+```bash
+uv run python -m app.seed team_demo
+```
+
+| Field | Value |
+| ----- | ----- |
+| Display name | Taylor Team |
+| Email | `team@baumpate.demo` |
+| User ID | `7e33b42d-e8ff-5261-91fe-c2f0d8fc44c0` |
+| Trees | `TeamDemo-1` … `TeamDemo-5` (owner on each) |
+| Co-partners | 10 (`Casey 1`, `Jordan 2`, … — 2 members per tree) |
+
+Try without auth:
+
+```bash
+curl http://localhost:8000/api/v1/me
+curl http://localhost:8000/api/v1/me/trees
+curl http://localhost:8000/api/v1/me/co-partners
+```
+
+Optional override: `DEV_AUTH_USER_ID=<uuid>` in `.env`.
 
 ---
 
@@ -291,9 +319,9 @@ Full contract: [`docs/03-api-contract.md`](03-api-contract.md).
 | Health     | `GET /healthz`                                                     |
 | Ingest     | `POST /ingest/http`, `POST /ingest/lorawan` (Bearer ingest secret) |
 | Map        | `GET /trees?bbox=…`, `GET /trees/{id}`, `GET /trees/{id}/readings` |
-| Adopt      | `POST /partnerships`, `GET /me/trees`                              |
+| Adopt      | `POST /partnerships`, `GET /me/trees`, `GET /me/co-partners`       |
 | Absence    | `POST /absences`, `GET /coverage/open`, `POST /coverage`           |
-| User       | `GET /me`, `PATCH /me`                                             |
+| User       | `GET /me`, `PATCH /me`, `GET /me/co-partners`                      |
 | Dashboard  | `GET /stats/overview`, `GET /stats/by-stadtteil`, `GET /sensors`   |
 | Weather    | `GET /weather/forecast`                                            |
 | Prediction | `GET /predictions` (mocked)                                        |

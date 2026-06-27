@@ -529,6 +529,8 @@ Response includes Flutter mapping fields: `title`, `species_app`, `health_state_
 | POST | `/partnerships/{id}/invite` | User | `{ email }` → member |
 | DELETE | `/partnerships/{id}` | User | Leave → 204 |
 
+**Co-partners:** there is no `friendships` table. Users who tend the same tree are linked via `tree_partnerships`. Use `GET /me/co-partners` for a deduplicated list of other profiles sharing at least one active partnership (owner, member, or caretaker). Per-tree partners are also on `GET /trees/{id}` → `partners[]`.
+
 ### Absences & coverage
 
 | Method | Path | Auth | Notes |
@@ -544,6 +546,7 @@ Response includes Flutter mapping fields: `title`, `species_app`, `health_state_
 | GET | `/me` | User | Profile + score + tree count |
 | PATCH | `/me` | User | display_name, notify_help_opt_in |
 | GET | `/me/trees` | User | Homepage map: trees + per-tree streak |
+| GET | `/me/co-partners` | User | Users sharing ≥1 active tree partnership |
 | GET | `/notifications` | User | List |
 | PATCH | `/notifications/{id}` | User | Mark read |
 
@@ -572,7 +575,7 @@ Response includes Flutter mapping fields: `title`, `species_app`, `health_state_
 2. Verify via `SUPABASE_JWKS_URL` (RS256/ES256) **or** `SUPABASE_JWT_SECRET` (HS256)
 3. `sub` claim → `CurrentUser.id`
 
-**Dev bypass:** `DEV_AUTH_DISABLED=true` → fixed UUID `00000000-0000-0000-0000-000000000001`
+**Dev bypass:** `DEV_AUTH_DISABLED=true` → all user routes run as the **team demo profile** (`Taylor Team`, `team@baumpate.demo`). Seed it with `uv run python -m app.seed team_demo` (included in `make seed`). Override with `DEV_AUTH_USER_ID=<uuid>` if needed.
 
 ### Ingest secret
 
@@ -801,7 +804,7 @@ Set `VITE_API_BASE_URL` to production API URL in CI env.
 
 - User-level `streak_days` (separate flame counter)
 - `watering_events` / liters (sensor can't measure volume)
-- Friends, leaderboard, `friendships`
+- `friendships` table, global friends graph, leaderboard (co-partners on shared trees: `GET /me/co-partners`)
 - Real ML predictions (stub only)
 - Full leaderboard in React live mode
 
