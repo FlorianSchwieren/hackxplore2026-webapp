@@ -89,11 +89,17 @@ Auth: user. → `200`
 
 ### `GET /me/co-partners` — users who share at least one active tree partnership
 Auth: user. Returns other profiles linked through any shared active `tree_partnerships` row (owner, member, or caretaker). Sorted by `shared_trees` desc, then `display_name`.
+
+Query: `include_all_trees=false` (default) — only shared trees in `trees[]`.  
+Query: `include_all_trees=true` — also returns `all_trees[]` per co-partner (every tree they tend, with `shared` + optional `your_role`).
+
 → `200`
 ```json
 { "count": 1, "co_partners": [
-  { "user_id":"…", "display_name":"Mia", "avatar_url": null, "shared_trees": 1,
-    "trees": [ { "tree_id":"…", "name":"Baum #100234", "your_role":"owner", "their_role":"member" } ] } ] }
+  { "user_id":"…", "display_name":"Casey 1", "avatar_url": null, "shared_trees": 1,
+    "trees": [ { "tree_id":"…", "name":"Mighty Oakley", "your_role":"owner", "their_role":"member" } ],
+    "all_trees": [ { "tree_id":"…", "name":"Mighty Oakley", "their_role":"member", "shared": true, "your_role":"owner" },
+                   { "tree_id":"…", "name":"Sleepy Spruce", "their_role":"owner", "shared": false, "your_role": null } ] } ] }
 ```
 
 ### `POST /partnerships/{id}/invite` — invite a friend (collaborative team)

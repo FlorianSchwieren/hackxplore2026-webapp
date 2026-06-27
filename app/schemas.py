@@ -193,12 +193,21 @@ class CoPartnerSharedTreeOut(BaseModel):
     their_role: str
 
 
+class CoPartnerAllTreeOut(BaseModel):
+    tree_id: UUID
+    name: str
+    their_role: str
+    shared: bool
+    your_role: str | None = None
+
+
 class CoPartnerOut(BaseModel):
     user_id: UUID
     display_name: str
     avatar_url: str | None = None
     shared_trees: int
     trees: list[CoPartnerSharedTreeOut]
+    all_trees: list[CoPartnerAllTreeOut] | None = None
 
 
 class CoPartnersResponse(BaseModel):

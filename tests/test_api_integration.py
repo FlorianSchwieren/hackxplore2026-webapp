@@ -257,3 +257,32 @@ def test_co_partners_returns_shared_tree_links(dev_auth: None) -> None:
     assert partner.trees[0].your_role
     assert partner.trees[0].their_role
     assert partner.trees[0].name
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="DATABASE_URL not configured")
+def test_co_partners_include_all_trees_for_team_demo(dev_auth: None) -> None:
+    from app.auth import CurrentUser, require_user
+    from app.seed.users import TEAM_DEMO_USER_ID
+    import app.main as main_module
+
+    def override_user() -> CurrentUser:
+        return CurrentUser(id=TEAM_DEMO_USER_ID, email="team@baumpate.demo")
+
+    for target in (main_module.app, main_module.api):
+        target.dependency_overrides[require_user] = override_user
+    try:
+        response = client.get("/api/v1/me/co-partners?include_all_trees=true")
+    finally:
+        for target in (main_module.app, main_module.api):
+            target.dependency_overrides.pop(require_user, None)
+
+    assert response.status_code == 200
+    parsed = CoPartnersResponse.model_validate(response.json())
+    assert parsed.count == 10
+    partner = parsed.co_partners[0]
+    assert partner.all_trees is not None
+    assert 2 <= len(partner.all_trees) <= 6
+    assert partner.shared_trees == 1
+    assert len(partner.trees) == 1
+    assert any(tree.shared for tree in partner.all_trees)
+    assert any(not tree.shared for tree in partner.all_trees)
