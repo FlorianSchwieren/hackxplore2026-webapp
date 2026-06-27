@@ -104,17 +104,18 @@ Query: `include_all_trees=true` — also returns `all_trees[]` per co-partner (e
                    { "tree_id":"…", "name":"Sleepy Spruce", "their_role":"owner", "shared": false, "your_role": null } ] } ] }
 ```
 
-### `GET /me/partnership-network` — bounded 2-hop demo graph
-Auth: user. Returns a graph-shaped view for display: root user → shared trees → co-partners → their trees → users on those trees → those users' trees. This endpoint is intentionally separate from `/me/co-partners` and capped for the demo.
+### `GET /me/partnership-network` — bounded 3-user-hop demo graph
+Auth: user. Returns a graph-shaped view for display: root user → shared trees → co-partners → their trees → users on those trees → those users' trees → third-degree users on those trees → third-degree users' trees. This endpoint is intentionally separate from `/me/co-partners` and capped for the demo.
 
-Query: `max_entities=200` (50–200, default 200), `max_second_degree_users=20` (0–50, default 20).
+Query: `max_entities=200` (50–200, default 200), `max_users_per_depth=20` (1–50, default 20).
 
 → `200`
 ```json
-{ "root_user_id":"…", "max_depth":2, "entity_count":131, "truncated":false,
+{ "root_user_id":"…", "max_depth":3, "entity_count":161, "truncated":false,
   "users":[ { "user_id":"…", "display_name":"Taylor Team", "depth":0 },
             { "user_id":"…", "display_name":"Casey 1", "depth":1 },
-            { "user_id":"…", "display_name":"Robin 11", "depth":2 } ],
+            { "user_id":"…", "display_name":"Robin 11", "depth":2 },
+            { "user_id":"…", "display_name":"Mika 21", "depth":3 } ],
   "trees":[ { "tree_id":"…", "name":"Chonky Root Downey Jr",
               "moisture_pct":43.2, "health_state":"healthy", "health_state_app":"healthy", "depth":0 } ],
   "partnerships":[ { "user_id":"…", "tree_id":"…", "role":"owner", "depth":0 },
@@ -224,7 +225,7 @@ Pattern: FastAPI writes the row (service role) → Postgres change → Supabase 
 | POST | `/partnerships` | user | adopt |
 | GET | `/me/trees` | user | homepage |
 | GET | `/me/co-partners` | user | shared-tree co-partners |
-| GET | `/me/partnership-network` | user | bounded 2-hop demo graph |
+| GET | `/me/partnership-network` | user | bounded 3-hop demo graph |
 | POST | `/partnerships/{id}/invite` | owner | invite friend |
 | DELETE | `/partnerships/{id}` | user | leave |
 | POST | `/absences` | user | declare absence |

@@ -19,6 +19,7 @@ NEARBY_MAX_METERS = 1000
 
 CO_PARTNER_IDS = [seed_uuid(f"user:team-copartner:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
 SECOND_DEGREE_IDS = [seed_uuid(f"user:team-second-degree:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
+THIRD_DEGREE_IDS = [seed_uuid(f"user:team-third-degree:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
 CO_PARTNER_NAMES = [
     "Casey 1",
     "Jordan 2",
@@ -43,6 +44,18 @@ SECOND_DEGREE_NAMES = [
     "Blair 19",
     "Toni 20",
 ]
+THIRD_DEGREE_NAMES = [
+    "Mika 21",
+    "Drew 22",
+    "Jules 23",
+    "Noel 24",
+    "Parker 25",
+    "Lane 26",
+    "Alexis 27",
+    "Briar 28",
+    "Kit 29",
+    "Arden 30",
+]
 
 
 def _ensure_users(session: Session) -> None:
@@ -53,6 +66,9 @@ def _ensure_users(session: Session) -> None:
     for index, user_id in enumerate(SECOND_DEGREE_IDS):
         email = f"team-network-{index + 1:02d}@baumpate.demo"
         _upsert_profile(session, user_id, SECOND_DEGREE_NAMES[index], email, False)
+    for index, user_id in enumerate(THIRD_DEGREE_IDS):
+        email = f"team-network-third-{index + 1:02d}@baumpate.demo"
+        _upsert_profile(session, user_id, THIRD_DEGREE_NAMES[index], email, False)
 
 
 def _owned_tree_ids(session: Session) -> list[str]:
@@ -348,8 +364,32 @@ def _expand_second_degree_network(session: Session) -> int:
     return created
 
 
+def _expand_third_degree_network(session: Session) -> int:
+    created = 0
+    for index, third_user_id in enumerate(THIRD_DEGREE_IDS):
+        second_user_id = SECOND_DEGREE_IDS[index]
+        second_user_trees = _partner_owned_tree_ids(session, second_user_id)
+        if not second_user_trees:
+            continue
+        shared_tree_id = second_user_trees[0]
+        _ensure_member(session, shared_tree_id, third_user_id, 2 + (index % 4))
+
+        if _active_partnership_count(session, third_user_id) >= 2:
+            continue
+        own_tree_id = _claim_nearby_tree(
+            session=session,
+            partner_id=third_user_id,
+            anchor_tree_id=shared_tree_id,
+            pick_offset=index + 3,
+        )
+        if own_tree_id:
+            _ensure_partner_owner(session, own_tree_id, third_user_id, 3 + (index % 4))
+            created += 1
+    return created
+
+
 def _recompute_scores(session: Session) -> None:
-    user_ids = [TEAM_DEMO_USER_ID, *CO_PARTNER_IDS, *SECOND_DEGREE_IDS]
+    user_ids = [TEAM_DEMO_USER_ID, *CO_PARTNER_IDS, *SECOND_DEGREE_IDS, *THIRD_DEGREE_IDS]
     session.execute(
         text(
             """
@@ -380,6 +420,7 @@ def seed(session: Session) -> int:
 
     created = _expand_partner_fleets(session)
     created += _expand_second_degree_network(session)
+    created += _expand_third_degree_network(session)
     _recompute_scores(session)
     session.commit()
     return TREE_COUNT + created

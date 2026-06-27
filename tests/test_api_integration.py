@@ -314,7 +314,11 @@ def test_partnership_network_for_team_demo_is_bounded(dev_auth: None) -> None:
     assert response.status_code == 200
     parsed = PartnershipNetworkResponse.model_validate(response.json())
     assert parsed.entity_count <= 200
-    assert len(parsed.users) >= 20
+    assert parsed.max_depth == 3
+    assert len(parsed.users) >= 30
     assert any(user.depth == 2 for user in parsed.users)
+    assert any(user.depth == 3 for user in parsed.users)
     assert any(tree.depth == 2 for tree in parsed.trees)
+    assert any(tree.depth == 3 for tree in parsed.trees)
     assert any(edge.depth == 2 for edge in parsed.partnerships)
+    assert any(edge.depth == 3 for edge in parsed.partnerships)
