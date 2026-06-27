@@ -49,9 +49,12 @@ export default function SensorDetailPanel() {
                 <Radio className="w-5 h-5 text-accent-teal shrink-0" />
                 <h2 className="text-base font-semibold text-white truncate">{sensor.name}</h2>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full border capitalize ${STATUS_BG[sensor.status]}`}>
-                {sensor.status}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-xs px-2 py-0.5 rounded-full border capitalize ${STATUS_BG[sensor.status]}`}>
+                  {sensor.status}
+                </span>
+                <span className="text-xs text-gray-500 font-mono truncate">{sensor.model_type}</span>
+              </div>
             </>
           )}
         </div>
@@ -67,7 +70,7 @@ export default function SensorDetailPanel() {
           {/* Info grid */}
           <div className="grid grid-cols-2 gap-3 px-4 py-4">
             {[
-              { icon: Radio, label: 'Model', value: sensor.model_type },
+              { icon: Radio, label: 'Sensor ID', value: sensor.model_type },
               {
                 icon: Activity,
                 label: 'Last Active',

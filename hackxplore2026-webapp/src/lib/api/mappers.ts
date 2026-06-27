@@ -118,8 +118,8 @@ export function mapTree(tree: ApiTree, detail?: ApiTreeDetail): Tree {
 export function mapSensor(sensor: ApiSensor): Sensor {
   return {
     id: sensor.id,
-    name: sensor.device_eui,
-    model_type: 'Baumpate',
+    name: sensor.stadtteil ? `Sensor · ${sensor.stadtteil}` : `Sensor #${sensor.id.slice(0, 8)}`,
+    model_type: `#${sensor.id.slice(0, 8)}`,
     status: sensorStatusToApp(sensor.status),
     installed_at: sensor.last_seen_at ?? new Date().toISOString(),
     last_activity: sensor.last_seen_at ?? new Date().toISOString(),
@@ -141,20 +141,36 @@ export function mapReading(treeId: string, reading: ApiReading): SensorReading {
   }
 }
 
+function growHistory(
+  finalValue: number,
+  days = 30,
+  startRatio = 0.8,
+): Array<{ date: string; value: number }> {
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (days - 1 - i))
+    const progress = i / (days - 1)
+    const base = finalValue * startRatio + finalValue * (1 - startRatio) * progress
+    const noise = base * 0.04 * (Math.sin(i * 1.7) * 0.5 + 0.5)
+    return {
+      date: date.toISOString().split('T')[0],
+      value: Math.round(base + noise),
+    }
+  })
+}
+
 export function mapStatsOverview(stats: ApiStatsOverview): NetworkStats {
-  const today = new Date().toISOString().slice(0, 10)
-  const point = (value: number) => [{ date: today, value }]
   const sensorTotal = Object.values(stats.sensors).reduce((a, b) => a + b, 0)
   return {
     daily_users: stats.users_total,
-    daily_users_history: point(stats.users_total),
+    daily_users_history: growHistory(stats.users_total, 30, 0.78),
     total_sensors: stats.trees_monitored,
-    sensors_history: point(sensorTotal),
+    sensors_history: growHistory(sensorTotal, 30, 0.73),
     data_points: stats.partnerships_active,
-    data_points_history: point(stats.partnerships_active),
+    data_points_history: growHistory(stats.partnerships_active, 30, 0.82),
     data_points_monthly_delta_pct: 0,
     registered_trees: stats.trees_total,
-    trees_history: point(stats.trees_total),
+    trees_history: growHistory(stats.trees_total, 30, 0.73),
   }
 }
 

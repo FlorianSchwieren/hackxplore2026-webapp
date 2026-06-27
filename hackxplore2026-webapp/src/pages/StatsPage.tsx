@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { format } from 'date-fns'
-import { useNetworkStats, useLeaderboard, useStadtteilStats } from '@/lib/queries/useStats'
+import { useNetworkStats, useStadtteilStats } from '@/lib/queries/useStats'
 import { useTrees } from '@/lib/queries/useTrees'
 import { useSensors } from '@/lib/queries/useSensors'
 
@@ -41,12 +41,9 @@ function ChartTooltipStyle({ active, payload, label }: { active?: boolean; paylo
 
 // Derived stats are computed inside StatsPage from live hooks.
 
-const RANK_COLORS = ['#fbbf24', '#94a3b8', '#d97706']
-
 export default function StatsPage() {
   const navigate = useNavigate()
   const { data: stats } = useNetworkStats()
-  const { data: leaderboard = [] } = useLeaderboard()
   const { data: trees = [] } = useTrees()
   const { data: sensors = [] } = useSensors()
   const { data: districtCounts = [] } = useStadtteilStats()
@@ -89,7 +86,7 @@ export default function StatsPage() {
   const districtsCovered = districtCounts.filter((d) => d.sensor_count > 0).length
 
   return (
-    <div className="min-h-screen bg-surface text-white pb-16">
+    <div className="h-screen overflow-y-auto bg-surface text-white pb-16 panel-scroll">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-[rgba(10,10,10,0.9)] backdrop-blur-[16px] border-b border-white/[0.06] h-14 flex items-center px-6 gap-4">
         <button
@@ -250,54 +247,18 @@ export default function StatsPage() {
           </div>
         </div>
 
-        {/* Leaderboard + Districts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Leaderboard */}
-          <div className={CHART_CARD}>
-            <p className="text-sm font-semibold text-white mb-4">Top Users by Assigned Trees</p>
-            <div className="space-y-2">
-              {leaderboard.map((user, idx) => {
-                const maxCount = leaderboard[0]?.assigned_trees_count ?? 1
-                return (
-                  <div key={user.id} className="flex items-center gap-3">
-                    <span
-                      className="w-6 text-center text-sm font-bold tabular-nums shrink-0"
-                      style={{ color: RANK_COLORS[idx] ?? '#6b7280' }}
-                    >
-                      {idx + 1}
-                    </span>
-                    <span className="text-sm text-white flex-1 truncate">{user.username}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${(user.assigned_trees_count / maxCount) * 100}%`,
-                            backgroundColor: RANK_COLORS[idx] ?? '#6b7280',
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-400 tabular-nums w-4 text-right">{user.assigned_trees_count}</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Districts */}
-          <div className={CHART_CARD}>
-            <p className="text-sm font-semibold text-white mb-4">Sensors by District</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={districtCounts} layout="vertical" margin={{ left: 0 }}>
-                <CartesianGrid {...GRID_COLORS} strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} />
-                <YAxis dataKey="district" type="category" tick={{ ...AXIS_TICK, fontSize: 10 }} tickLine={false} axisLine={false} width={130} />
-                <Tooltip content={<ChartTooltipStyle />} />
-                <Bar dataKey="sensor_count" name="Sensors" fill="#22c55e" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+        {/* Districts */}
+        <div className={CHART_CARD}>
+          <p className="text-sm font-semibold text-white mb-4">Sensors by District</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={districtCounts} layout="vertical" margin={{ left: 0 }}>
+              <CartesianGrid {...GRID_COLORS} strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+              <YAxis dataKey="district" type="category" tick={{ ...AXIS_TICK, fontSize: 10 }} tickLine={false} axisLine={false} width={130} />
+              <Tooltip content={<ChartTooltipStyle />} />
+              <Bar dataKey="sensor_count" name="Sensors" fill="#22c55e" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

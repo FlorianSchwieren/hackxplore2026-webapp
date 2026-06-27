@@ -15,7 +15,7 @@ export default function DetailPanelWrapper({ isOpen, children }: DetailPanelWrap
         <motion.div
           className={
             isMobile
-              ? 'fixed bottom-0 left-0 right-0 h-[85vh] z-50 bg-[rgba(10,10,10,0.97)] backdrop-blur-[20px] border-t border-white/[0.08] rounded-t-2xl overflow-y-auto panel-scroll'
+              ? 'fixed bottom-0 left-0 right-0 h-[85vh] z-50 bg-[rgba(10,10,10,0.97)] backdrop-blur-[20px] border-t border-white/[0.08] rounded-t-2xl flex flex-col overflow-hidden'
               : 'fixed top-14 right-0 w-[380px] h-[calc(100vh-56px)] z-30 bg-[rgba(10,10,10,0.92)] backdrop-blur-[20px] border-l border-white/[0.06] overflow-y-auto panel-scroll'
           }
           initial={isMobile ? { y: '100%' } : { x: '100%' }}
@@ -23,12 +23,11 @@ export default function DetailPanelWrapper({ isOpen, children }: DetailPanelWrap
           exit={isMobile ? { y: '100%' } : { x: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
         >
-          {isMobile && (
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-white/20 rounded-full" />
+          {isMobile ? (
+            <div className="overflow-y-auto panel-scroll flex-1">
+              {children}
             </div>
-          )}
-          {children}
+          ) : children}
         </motion.div>
       )}
     </AnimatePresence>
