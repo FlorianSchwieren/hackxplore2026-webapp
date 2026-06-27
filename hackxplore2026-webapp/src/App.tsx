@@ -7,6 +7,7 @@ import { PageLoader } from '@/components/common/LoadingSpinner'
 import MainPage from '@/pages/MainPage'
 
 const StatsPage = lazy(() => import('@/pages/StatsPage'))
+const ForecastPage = lazy(() => import('@/pages/ForecastPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,14 @@ export default function App() {
                 element={
                   <Suspense fallback={<PageLoader />}>
                     <StatsPage />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="/forecast"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ForecastPage />
                   </Suspense>
                 }
               />
