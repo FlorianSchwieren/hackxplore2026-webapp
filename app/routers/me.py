@@ -6,7 +6,7 @@ from sqlmodel import Session
 
 from app.auth import CurrentUser, require_user
 from app.db import get_session
-from app.mapping import title_for_tree
+from app.mapping import title_for_tree, to_app_health_state
 from app.schemas import (
     CoPartnerAllTreeOut,
     CoPartnerOut,
@@ -21,6 +21,16 @@ from app.schemas import (
 )
 
 router = APIRouter(tags=["me"])
+
+
+def _tree_health_fields(row: dict) -> dict:
+    health = row.get("health_state")
+    moisture = row.get("moisture_pct")
+    return {
+        "moisture_pct": float(moisture) if moisture is not None else None,
+        "health_state": health,
+        "health_state_app": to_app_health_state(health),
+    }
 
 
 @router.get("/me", response_model=ProfileOut)
@@ -135,6 +145,7 @@ def get_co_partners(
             """
             select p.id as user_id, p.display_name, p.avatar_url,
                    tp1.tree_id, t.name, t.external_id,
+                   t.moisture_pct, t.health_state,
                    tp1.role as your_role, tp2.role as their_role
             from tree_partnerships tp1
             join tree_partnerships tp2
@@ -169,6 +180,7 @@ def get_co_partners(
                 name=title_for_tree(row["name"], row["external_id"]),
                 your_role=row["your_role"],
                 their_role=row["their_role"],
+                **_tree_health_fields(dict(row)),
             )
         )
         partner.shared_trees = len(partner.trees)
@@ -188,6 +200,7 @@ def get_co_partners(
                       and (tp1.active_to is null or tp1.active_to >= current_date)
                 )
                 select cp.id as user_id, tp.tree_id, t.name, t.external_id,
+                       t.moisture_pct, t.health_state,
                        tp.role as their_role, mp.role as your_role
                 from co_partner_ids cp
                 join tree_partnerships tp
@@ -216,6 +229,7 @@ def get_co_partners(
                     their_role=row["their_role"],
                     shared=your_role is not None,
                     your_role=your_role,
+                    **_tree_health_fields(dict(row)),
                 )
             )
         for partner_id, partner in grouped.items():

@@ -191,6 +191,9 @@ class CoPartnerSharedTreeOut(BaseModel):
     name: str
     your_role: str
     their_role: str
+    moisture_pct: float | None = None
+    health_state: str | None = None
+    health_state_app: str | None = None
 
 
 class CoPartnerAllTreeOut(BaseModel):
@@ -199,6 +202,9 @@ class CoPartnerAllTreeOut(BaseModel):
     their_role: str
     shared: bool
     your_role: str | None = None
+    moisture_pct: float | None = None
+    health_state: str | None = None
+    health_state_app: str | None = None
 
 
 class CoPartnerOut(BaseModel):
