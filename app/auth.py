@@ -6,6 +6,7 @@ from fastapi import Depends, Header, HTTPException, status
 from jwt import PyJWKClient
 
 from app.config import Settings, get_settings
+from app.seed.users import TEAM_DEMO_EMAIL, TEAM_DEMO_USER_ID
 
 
 @dataclass(frozen=True)
@@ -61,7 +62,8 @@ def require_user(
     settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
     if settings.dev_auth_disabled:
-        return CurrentUser(id=UUID("00000000-0000-0000-0000-000000000001"), email="dev@local")
+        user_id = settings.dev_auth_user_id or str(TEAM_DEMO_USER_ID)
+        return CurrentUser(id=UUID(user_id), email=TEAM_DEMO_EMAIL)
 
     token = _extract_bearer(authorization)
     claims = decode_supabase_jwt(token, settings)

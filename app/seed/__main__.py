@@ -1,7 +1,7 @@
 import argparse
 
 from app.db import session_context
-from app.seed import demo, partnerships, readings, sensors, species, trees, users
+from app.seed import demo, partnerships, readings, sensors, species, team_demo, tree_enrichment, trees, users
 
 
 def run_all(citywide: bool = False) -> dict[str, int]:
@@ -14,6 +14,8 @@ def run_all(citywide: bool = False) -> dict[str, int]:
             "users": users.seed(session),
             "partnerships": partnerships.seed(session),
             "demo": demo.seed(session),
+            "team_demo": team_demo.seed(session),
+            "tree_enrichment": tree_enrichment.seed(session),
         }
 
 
@@ -21,7 +23,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Seed Baumpate demo data")
     parser.add_argument(
         "target",
-        choices=["all", "species", "trees", "sensors", "readings", "users", "partnerships", "demo"],
+        choices=["all", "species", "trees", "sensors", "readings", "users", "partnerships", "demo", "team_demo", "tree_enrichment"],
     )
     parser.add_argument("--citywide", action="store_true", help="Fetch all Karlsruhe trees from geoportal")
     args = parser.parse_args()
@@ -38,6 +40,8 @@ def main() -> None:
                 "users": users,
                 "partnerships": partnerships,
                 "demo": demo,
+                "team_demo": team_demo,
+                "tree_enrichment": tree_enrichment,
             }[args.target]
             if args.target == "trees":
                 result = {"trees": module.seed(session, citywide=args.citywide)}

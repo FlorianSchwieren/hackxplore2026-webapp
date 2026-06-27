@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.main import app
-from app.schemas import HealthzResponse, PredictionsResponse
+from app.schemas import CoPartnersResponse, HealthzResponse, PredictionsResponse
 from tests.conftest import HAS_DATABASE, KARLSRUHE_BBOX
 
 client = TestClient(app)
@@ -53,6 +53,19 @@ def test_trees_requires_auth_when_dev_auth_off(auth_required: None) -> None:
 def test_stats_overview_requires_auth_when_dev_auth_off(auth_required: None) -> None:
     response = client.get("/api/v1/stats/overview")
     assert response.status_code == 401
+
+
+def test_co_partners_requires_auth_when_dev_auth_off(auth_required: None) -> None:
+    response = client.get("/api/v1/me/co-partners")
+    assert response.status_code == 401
+
+
+def test_co_partners_empty_response_shape(dev_auth: None, mock_db_session: object) -> None:
+    response = client.get("/api/v1/me/co-partners")
+    assert response.status_code == 200
+    parsed = CoPartnersResponse.model_validate(response.json())
+    assert parsed.count == 0
+    assert parsed.co_partners == []
 
 
 # --- Ingest auth (no DB — rejected before session) ---
@@ -195,3 +208,52 @@ def test_partnership_adopt_conflict_on_adopted_tree(dev_auth: None) -> None:
     response = client.post("/api/v1/partnerships", json={"tree_id": tree_id})
     assert response.status_code == 409
     assert "adopted" in response.json()["detail"].lower()
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="DATABASE_URL not configured")
+def test_co_partners_returns_shared_tree_links(dev_auth: None) -> None:
+    from sqlalchemy import text
+
+    from app.auth import CurrentUser, require_user
+    from app.db import session_context
+    import app.main as main_module
+
+    with session_context() as session:
+        row = session.execute(
+            text(
+                """
+                select tp1.user_id
+                from tree_partnerships tp1
+                join tree_partnerships tp2
+                  on tp1.tree_id = tp2.tree_id
+                 and tp2.user_id <> tp1.user_id
+                 and (tp2.active_to is null or tp2.active_to >= current_date)
+                where tp1.active_to is null or tp1.active_to >= current_date
+                limit 1
+                """
+            )
+        ).first()
+    if not row:
+        pytest.skip("No co-partners in database — run `make seed` first")
+
+    def override_user() -> CurrentUser:
+        return CurrentUser(id=row[0])
+
+    for target in (main_module.app, main_module.api):
+        target.dependency_overrides[require_user] = override_user
+    try:
+        response = client.get("/api/v1/me/co-partners")
+    finally:
+        for target in (main_module.app, main_module.api):
+            target.dependency_overrides.pop(require_user, None)
+
+    assert response.status_code == 200
+    parsed = CoPartnersResponse.model_validate(response.json())
+    assert parsed.count >= 1
+    assert len(parsed.co_partners) == parsed.count
+    partner = parsed.co_partners[0]
+    assert partner.shared_trees >= 1
+    assert len(partner.trees) == partner.shared_trees
+    assert partner.trees[0].your_role
+    assert partner.trees[0].their_role
+    assert partner.trees[0].name

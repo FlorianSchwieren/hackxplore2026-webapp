@@ -13,7 +13,9 @@
 6. sensor_readings (current snapshot per sensor)  → seed_readings.py
 7. profiles (2 real demo users + ~300 fake)       → seed_users.py
 8. tree_partnerships + absences (fake activity)   → seed_partnerships.py
-9. demo scenario (User1 + Berta + real sensor)    → seed_demo.py   ← run LAST, authoritative
+9. demo scenario (User1 + Berta + real sensor)    → seed_demo.py
+10. team demo profile (Taylor Team, no JWT)       → seed_team_demo.py
+11. funny names + mock health for all trees      → seed_tree_enrichment.py   ← run LAST
 ```
 
 Provide a single `make seed` / `python -m app.seed all` that runs them in order.
@@ -23,7 +25,7 @@ Provide a single `make seed` / `python -m app.seed all` that runs them in order.
 - **Source:** the geoportal FeatureServer (layer 2). City‑center working copy already saved at [`data/raw/karlsruhe_trees_citycenter.geojson`](../data/raw/karlsruhe_trees_citycenter.geojson) (4,377 trees, Innenstadt‑Ost+West).
 - **Full citywide load:** page through all ~130,867 features (the API caps ~2,000/request → use `resultOffset`/`resultRecordCount`, like the script that produced the city‑center file). Request `outFields=objectid,lfdbnr,artdeut,artlat,baumart_allgemein,baumgruppe,stadtteil`, `outSR=4326`, `f=geojson`.
 - **Upsert** on `external_id = objectid`. Map geometry → `geom` (`ST_SetSRID(ST_MakePoint(lon,lat),4326)`).
-- **Default name:** leave `name` null; the app shows `"Baum #<external_id>"`.
+- **Default name:** assigned by `seed_tree_enrichment.py` — deterministic funny names (Heroku-style adjective + tree pun), except **Berta** stays for the demo.
 - Resolve `species_profile_id` (see §4).
 
 Endpoint template:

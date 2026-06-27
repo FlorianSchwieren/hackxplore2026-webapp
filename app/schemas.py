@@ -186,6 +186,26 @@ class MyTreesResponse(BaseModel):
     trees: list[MyTreeOut]
 
 
+class CoPartnerSharedTreeOut(BaseModel):
+    tree_id: UUID
+    name: str
+    your_role: str
+    their_role: str
+
+
+class CoPartnerOut(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_url: str | None = None
+    shared_trees: int
+    trees: list[CoPartnerSharedTreeOut]
+
+
+class CoPartnersResponse(BaseModel):
+    count: int
+    co_partners: list[CoPartnerOut]
+
+
 class ProfileOut(BaseModel):
     id: UUID
     display_name: str

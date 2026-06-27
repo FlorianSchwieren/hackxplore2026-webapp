@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api/v1"
     environment: str = "development"
     dev_auth_disabled: bool = False
+    dev_auth_user_id: str | None = None
 
     supabase_url: str | None = None
     supabase_anon_key: str | None = Field(

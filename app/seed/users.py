@@ -8,6 +8,9 @@ from app.seed.common import seed_uuid
 RANDOM_SEED = 42
 DEMO_USER_1_ID = seed_uuid("user:alex@baumpate.demo")
 DEMO_USER_2_ID = seed_uuid("user:sam@baumpate.demo")
+TEAM_DEMO_USER_ID = seed_uuid("user:team@baumpate.demo")
+TEAM_DEMO_EMAIL = "team@baumpate.demo"
+TEAM_DEMO_NAME = "Taylor Team"
 
 
 FIRST_NAMES = [

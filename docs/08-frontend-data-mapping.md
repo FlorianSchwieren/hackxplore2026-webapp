@@ -65,8 +65,12 @@ API returns **both** `health_state` (our 5) and `health_state_app` (the app's 4)
 ## 5. `WaterRecord { date, liters }` — DROPPED
 A **soil‑moisture sensor cannot measure liters poured.** Rather than fake a number, the app shows the **moisture curve** from `GET /trees/{id}/readings` (time series of `moisture_pct`), which directly visualises "it was watered" as a rise. If discrete "watered" markers are ever wanted, the frontend can detect a sharp rise in that same curve — no backend liters needed. Decision: **don't track liters.**
 
-## 6. `Friend` / `StreakEntry` / `streakDays` — DEFERRED
-A friends graph + a per‑user streak leaderboard is a social feature, not part of the city‑transparency value we're building. **Deferred:** no `friendships` table, no user‑level `streak_days`. (The collaborative core — co‑owning a tree via invitation, covering an absence — is still fully supported via `tree_partnerships`.) Easy to add later if the product wants it.
+## 6. `Friend` / `StreakEntry` / `streakDays` — PARTIAL
+A global **friends graph** and a per-user **streak leaderboard** remain deferred (no `friendships` table, no user-level `streak_days`).
+
+**Co-partners** (users who share at least one active `tree_partnerships` row) are served by **`GET /me/co-partners`**. This is derived from existing partnership data — not a separate social graph. Each item includes profile fields plus the shared trees and both roles (`your_role`, `their_role`). Per-tree partners are also on `GET /trees/{id}` → `partners[]`.
+
+The collaborative core — co-owning via invitation, covering an absence — is fully supported via `tree_partnerships`.
 
 ## 7. `AppNotification { id, title, body, receivedAt, isRead }`
 Served by `notifications` (`id`, `title`, `body`, `received_at`=`created_at`, `is_read`=`read`). Backend generates `title`/`body` from `kind`+tree. Mostly frontend‑mocked for the demo; the table + `GET /notifications` exist so it's real if wanted.
@@ -81,4 +85,4 @@ Served by `notifications` (`id`, `title`, `body`, `received_at`=`created_at`, `i
 *(No `watering_events`, no `friendships`, no `streak_days` — dropped/deferred per §§5–6.)*
 
 ## 9. Verdict
-The backend serves the app's models 1:1 or via a trivial derivation, **except** liters (dropped — moisture curve instead) and friends (deferred). Everything the demo needs is covered.
+The backend serves the app's models 1:1 or via a trivial derivation, **except** liters (dropped — moisture curve instead), a global friends graph / leaderboard (deferred), and user-level `streak_days` (deferred). Co-partners on shared trees are covered by `GET /me/co-partners`. Everything the demo needs is covered.

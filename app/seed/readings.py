@@ -74,6 +74,7 @@ def seed(session: Session) -> int:
         )()
         state = health_state(moisture, profile)
         score = health_score(moisture, profile)
+        score = max(score, 12)
         session.execute(
             text(
                 """
