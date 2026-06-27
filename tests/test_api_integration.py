@@ -257,6 +257,8 @@ def test_co_partners_returns_shared_tree_links(dev_auth: None) -> None:
     assert partner.trees[0].your_role
     assert partner.trees[0].their_role
     assert partner.trees[0].name
+    assert partner.trees[0].moisture_pct is not None
+    assert partner.trees[0].health_state is not None
 
 
 @pytest.mark.skipif(not HAS_DATABASE, reason="DATABASE_URL not configured")
@@ -286,3 +288,7 @@ def test_co_partners_include_all_trees_for_team_demo(dev_auth: None) -> None:
     assert len(partner.trees) == 1
     assert any(tree.shared for tree in partner.all_trees)
     assert any(not tree.shared for tree in partner.all_trees)
+    tree = partner.all_trees[0]
+    assert tree.moisture_pct is not None
+    assert tree.health_state is not None
+    assert tree.health_state_app is not None

@@ -97,8 +97,10 @@ Query: `include_all_trees=true` — also returns `all_trees[]` per co-partner (e
 ```json
 { "count": 1, "co_partners": [
   { "user_id":"…", "display_name":"Casey 1", "avatar_url": null, "shared_trees": 1,
-    "trees": [ { "tree_id":"…", "name":"Mighty Oakley", "your_role":"owner", "their_role":"member" } ],
-    "all_trees": [ { "tree_id":"…", "name":"Mighty Oakley", "their_role":"member", "shared": true, "your_role":"owner" },
+    "trees": [ { "tree_id":"…", "name":"Mighty Oakley", "your_role":"owner", "their_role":"member",
+                 "moisture_pct": 43.2, "health_state": "healthy", "health_state_app": "healthy" } ],
+    "all_trees": [ { "tree_id":"…", "name":"Mighty Oakley", "their_role":"member", "shared": true, "your_role":"owner",
+                     "moisture_pct": 43.2, "health_state": "healthy", "health_state_app": "healthy" },
                    { "tree_id":"…", "name":"Sleepy Spruce", "their_role":"owner", "shared": false, "your_role": null } ] } ] }
 ```
 
