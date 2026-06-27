@@ -16,6 +16,10 @@ from app.schemas import (
     MyTreesResponse,
     NotificationOut,
     NotificationPatch,
+    PartnershipNetworkEdge,
+    PartnershipNetworkResponse,
+    PartnershipNetworkTree,
+    PartnershipNetworkUser,
     ProfileOut,
     ProfilePatch,
 )
@@ -240,6 +244,240 @@ def get_co_partners(
         key=lambda partner: (-partner.shared_trees, partner.display_name.lower()),
     )
     return CoPartnersResponse(count=len(co_partners), co_partners=co_partners)
+
+
+@router.get("/me/partnership-network", response_model=PartnershipNetworkResponse)
+def get_partnership_network(
+    max_entities: int = Query(default=200, ge=50, le=200),
+    max_second_degree_users: int = Query(default=20, ge=0, le=50),
+    user: CurrentUser = Depends(require_user),
+    session: Session = Depends(get_session),
+) -> PartnershipNetworkResponse:
+    root_tree_rows = session.execute(
+        text(
+            """
+            select distinct tree_id
+            from tree_partnerships
+            where user_id = :user_id and (active_to is null or active_to >= current_date)
+            order by tree_id
+            """
+        ),
+        {"user_id": user.id},
+    ).mappings().all()
+    root_tree_ids = [row["tree_id"] for row in root_tree_rows]
+    if not root_tree_ids:
+        return PartnershipNetworkResponse(
+            root_user_id=user.id,
+            max_depth=2,
+            entity_count=1,
+            users=[],
+            trees=[],
+            partnerships=[],
+        )
+
+    first_user_rows = session.execute(
+        text(
+            """
+            select distinct user_id
+            from tree_partnerships
+            where tree_id = any(:tree_ids)
+              and user_id <> :user_id
+              and (active_to is null or active_to >= current_date)
+            order by user_id
+            """
+        ),
+        {"tree_ids": root_tree_ids, "user_id": user.id},
+    ).mappings().all()
+    first_user_ids = [row["user_id"] for row in first_user_rows]
+
+    first_tree_ids: list[UUID] = []
+    if first_user_ids:
+        first_tree_rows = session.execute(
+            text(
+                """
+                select distinct tree_id
+                from tree_partnerships
+                where user_id = any(:user_ids)
+                  and (active_to is null or active_to >= current_date)
+                order by tree_id
+                """
+            ),
+            {"user_ids": first_user_ids},
+        ).mappings().all()
+        first_tree_ids = [row["tree_id"] for row in first_tree_rows]
+
+    second_user_ids: list[UUID] = []
+    if first_tree_ids and max_second_degree_users:
+        second_user_rows = session.execute(
+            text(
+                """
+                select distinct user_id
+                from tree_partnerships
+                where tree_id = any(:tree_ids)
+                  and user_id <> :root_user_id
+                  and not (user_id = any(:first_user_ids))
+                  and (active_to is null or active_to >= current_date)
+                order by user_id
+                limit :limit
+                """
+            ),
+            {
+                "tree_ids": first_tree_ids,
+                "root_user_id": user.id,
+                "first_user_ids": first_user_ids or [user.id],
+                "limit": max_second_degree_users,
+            },
+        ).mappings().all()
+        second_user_ids = [row["user_id"] for row in second_user_rows]
+
+    second_tree_ids: list[UUID] = []
+    if second_user_ids:
+        second_tree_rows = session.execute(
+            text(
+                """
+                select distinct tree_id
+                from tree_partnerships
+                where user_id = any(:user_ids)
+                  and (active_to is null or active_to >= current_date)
+                order by tree_id
+                """
+            ),
+            {"user_ids": second_user_ids},
+        ).mappings().all()
+        second_tree_ids = [row["tree_id"] for row in second_tree_rows]
+
+    user_depth: dict[UUID, int] = {user.id: 0}
+    user_depth.update({user_id: 1 for user_id in first_user_ids})
+    user_depth.update({user_id: 2 for user_id in second_user_ids if user_id not in user_depth})
+
+    tree_depth: dict[UUID, int] = {tree_id: 0 for tree_id in root_tree_ids}
+    for tree_id in first_tree_ids:
+        tree_depth.setdefault(tree_id, 1)
+    for tree_id in second_tree_ids:
+        tree_depth.setdefault(tree_id, 2)
+
+    user_ids = list(user_depth)
+    tree_ids = list(tree_depth)
+    if not user_ids or not tree_ids:
+        return PartnershipNetworkResponse(
+            root_user_id=user.id,
+            max_depth=2,
+            entity_count=len(user_ids) + len(tree_ids),
+            users=[],
+            trees=[],
+            partnerships=[],
+        )
+
+    users_by_id = {
+        row["id"]: row
+        for row in session.execute(
+            text(
+                """
+                select id, display_name, avatar_url
+                from profiles
+                where id = any(:user_ids)
+                """
+            ),
+            {"user_ids": user_ids},
+        ).mappings().all()
+    }
+    tree_rows = session.execute(
+        text(
+            """
+            select id, external_id, name, moisture_pct, health_state
+            from trees
+            where id = any(:tree_ids)
+            """
+        ),
+        {"tree_ids": tree_ids},
+    ).mappings().all()
+    trees_by_id = {row["id"]: row for row in tree_rows}
+    partnership_rows = session.execute(
+        text(
+            """
+            select user_id, tree_id, role
+            from tree_partnerships
+            where user_id = any(:user_ids)
+              and tree_id = any(:tree_ids)
+              and (active_to is null or active_to >= current_date)
+            order by user_id, tree_id, role
+            """
+        ),
+        {"user_ids": user_ids, "tree_ids": tree_ids},
+    ).mappings().all()
+
+    entity_count = len(user_ids) + len(tree_ids) + len(partnership_rows)
+    truncated = entity_count > max_entities
+    while entity_count > max_entities and second_user_ids:
+        removed_user = second_user_ids.pop()
+        user_depth.pop(removed_user, None)
+        user_ids = list(user_depth)
+        second_tree_ids = [
+            row["tree_id"]
+            for row in session.execute(
+                text(
+                    """
+                    select distinct tree_id
+                    from tree_partnerships
+                    where user_id = any(:user_ids)
+                      and (active_to is null or active_to >= current_date)
+                    """
+                ),
+                {"user_ids": second_user_ids or [user.id]},
+            ).mappings().all()
+        ]
+        tree_depth = {tree_id: 0 for tree_id in root_tree_ids}
+        for tree_id in first_tree_ids:
+            tree_depth.setdefault(tree_id, 1)
+        for tree_id in second_tree_ids:
+            tree_depth.setdefault(tree_id, 2)
+        tree_ids = list(tree_depth)
+        partnership_rows = [
+            row
+            for row in partnership_rows
+            if row["user_id"] in user_depth and row["tree_id"] in tree_depth
+        ]
+        entity_count = len(user_ids) + len(tree_ids) + len(partnership_rows)
+
+    users = [
+        PartnershipNetworkUser(
+            user_id=user_id,
+            display_name=users_by_id[user_id]["display_name"],
+            avatar_url=users_by_id[user_id].get("avatar_url"),
+            depth=depth,
+        )
+        for user_id, depth in sorted(user_depth.items(), key=lambda item: (item[1], str(item[0])))
+        if user_id in users_by_id
+    ]
+    trees = [
+        PartnershipNetworkTree(
+            tree_id=tree_id,
+            name=title_for_tree(trees_by_id[tree_id]["name"], trees_by_id[tree_id]["external_id"]),
+            depth=depth,
+            **_tree_health_fields(dict(trees_by_id[tree_id])),
+        )
+        for tree_id, depth in sorted(tree_depth.items(), key=lambda item: (item[1], str(item[0])))
+        if tree_id in trees_by_id
+    ]
+    partnerships = [
+        PartnershipNetworkEdge(
+            user_id=row["user_id"],
+            tree_id=row["tree_id"],
+            role=row["role"],
+            depth=max(user_depth.get(row["user_id"], 0), tree_depth.get(row["tree_id"], 0)),
+        )
+        for row in partnership_rows
+        if row["user_id"] in user_depth and row["tree_id"] in tree_depth
+    ]
+    return PartnershipNetworkResponse(
+        root_user_id=user.id,
+        max_depth=2,
+        entity_count=len(users) + len(trees) + len(partnerships),
+        truncated=truncated,
+        users=users,
+        trees=trees,
+        partnerships=partnerships,
+    )
 
 
 @router.get("/notifications", response_model=list[NotificationOut])

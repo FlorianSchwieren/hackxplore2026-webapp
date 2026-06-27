@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.main import app
-from app.schemas import CoPartnersResponse, HealthzResponse, PredictionsResponse
+from app.schemas import CoPartnersResponse, HealthzResponse, PartnershipNetworkResponse, PredictionsResponse
 from tests.conftest import HAS_DATABASE, KARLSRUHE_BBOX
 
 client = TestClient(app)
@@ -292,3 +292,29 @@ def test_co_partners_include_all_trees_for_team_demo(dev_auth: None) -> None:
     assert tree.moisture_pct is not None
     assert tree.health_state is not None
     assert tree.health_state_app is not None
+
+
+@pytest.mark.skipif(not HAS_DATABASE, reason="DATABASE_URL not configured")
+def test_partnership_network_for_team_demo_is_bounded(dev_auth: None) -> None:
+    from app.auth import CurrentUser, require_user
+    from app.seed.users import TEAM_DEMO_USER_ID
+    import app.main as main_module
+
+    def override_user() -> CurrentUser:
+        return CurrentUser(id=TEAM_DEMO_USER_ID, email="team@baumpate.demo")
+
+    for target in (main_module.app, main_module.api):
+        target.dependency_overrides[require_user] = override_user
+    try:
+        response = client.get("/api/v1/me/partnership-network")
+    finally:
+        for target in (main_module.app, main_module.api):
+            target.dependency_overrides.pop(require_user, None)
+
+    assert response.status_code == 200
+    parsed = PartnershipNetworkResponse.model_validate(response.json())
+    assert parsed.entity_count <= 200
+    assert len(parsed.users) >= 20
+    assert any(user.depth == 2 for user in parsed.users)
+    assert any(tree.depth == 2 for tree in parsed.trees)
+    assert any(edge.depth == 2 for edge in parsed.partnerships)

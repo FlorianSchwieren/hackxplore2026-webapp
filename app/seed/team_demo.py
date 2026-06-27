@@ -18,6 +18,7 @@ NEARBY_MIN_METERS = 150
 NEARBY_MAX_METERS = 1000
 
 CO_PARTNER_IDS = [seed_uuid(f"user:team-copartner:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
+SECOND_DEGREE_IDS = [seed_uuid(f"user:team-second-degree:{index}") for index in range(1, CO_PARTNER_COUNT + 1)]
 CO_PARTNER_NAMES = [
     "Casey 1",
     "Jordan 2",
@@ -30,6 +31,18 @@ CO_PARTNER_NAMES = [
     "Reese 9",
     "Dakota 10",
 ]
+SECOND_DEGREE_NAMES = [
+    "Robin 11",
+    "Finley 12",
+    "Harper 13",
+    "Rowan 14",
+    "Sage 15",
+    "Remy 16",
+    "Ellis 17",
+    "Kai 18",
+    "Blair 19",
+    "Toni 20",
+]
 
 
 def _ensure_users(session: Session) -> None:
@@ -37,6 +50,9 @@ def _ensure_users(session: Session) -> None:
     for index, partner_id in enumerate(CO_PARTNER_IDS):
         email = f"team-copartner-{index + 1:02d}@baumpate.demo"
         _upsert_profile(session, partner_id, CO_PARTNER_NAMES[index], email, False)
+    for index, user_id in enumerate(SECOND_DEGREE_IDS):
+        email = f"team-network-{index + 1:02d}@baumpate.demo"
+        _upsert_profile(session, user_id, SECOND_DEGREE_NAMES[index], email, False)
 
 
 def _owned_tree_ids(session: Session) -> list[str]:
@@ -272,6 +288,23 @@ def _ensure_partner_owner(session: Session, tree_id: str, partner_id, streak: in
     )
 
 
+def _partner_owned_tree_ids(session: Session, partner_id) -> list[str]:
+    rows = session.execute(
+        text(
+            """
+            select tree_id
+            from tree_partnerships
+            where user_id = :user_id
+              and role = 'owner'
+              and active_to is null
+            order by created_at, tree_id
+            """
+        ),
+        {"user_id": partner_id},
+    ).mappings().all()
+    return [str(row["tree_id"]) for row in rows]
+
+
 def _expand_partner_fleets(session: Session) -> int:
     created = 0
     for index, partner_id in enumerate(CO_PARTNER_IDS):
@@ -291,8 +324,32 @@ def _expand_partner_fleets(session: Session) -> int:
     return created
 
 
+def _expand_second_degree_network(session: Session) -> int:
+    created = 0
+    for index, second_user_id in enumerate(SECOND_DEGREE_IDS):
+        partner_id = CO_PARTNER_IDS[index]
+        partner_trees = _partner_owned_tree_ids(session, partner_id)
+        if not partner_trees:
+            continue
+        shared_tree_id = partner_trees[index % len(partner_trees)]
+        _ensure_member(session, shared_tree_id, second_user_id, 3 + (index % 5))
+
+        if _active_partnership_count(session, second_user_id) >= 2:
+            continue
+        own_tree_id = _claim_nearby_tree(
+            session=session,
+            partner_id=second_user_id,
+            anchor_tree_id=shared_tree_id,
+            pick_offset=index,
+        )
+        if own_tree_id:
+            _ensure_partner_owner(session, own_tree_id, second_user_id, 4 + (index % 4))
+            created += 1
+    return created
+
+
 def _recompute_scores(session: Session) -> None:
-    user_ids = [TEAM_DEMO_USER_ID, *CO_PARTNER_IDS]
+    user_ids = [TEAM_DEMO_USER_ID, *CO_PARTNER_IDS, *SECOND_DEGREE_IDS]
     session.execute(
         text(
             """
@@ -322,6 +379,7 @@ def seed(session: Session) -> int:
         _ensure_member(session, tree_id, member_b, owner_streak - 2)
 
     created = _expand_partner_fleets(session)
+    created += _expand_second_degree_network(session)
     _recompute_scores(session)
     session.commit()
     return TREE_COUNT + created

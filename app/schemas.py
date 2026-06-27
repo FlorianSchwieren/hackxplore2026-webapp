@@ -221,6 +221,39 @@ class CoPartnersResponse(BaseModel):
     co_partners: list[CoPartnerOut]
 
 
+class PartnershipNetworkUser(BaseModel):
+    user_id: UUID
+    display_name: str
+    avatar_url: str | None = None
+    depth: int
+
+
+class PartnershipNetworkTree(BaseModel):
+    tree_id: UUID
+    name: str
+    moisture_pct: float | None = None
+    health_state: str | None = None
+    health_state_app: str | None = None
+    depth: int
+
+
+class PartnershipNetworkEdge(BaseModel):
+    user_id: UUID
+    tree_id: UUID
+    role: str
+    depth: int
+
+
+class PartnershipNetworkResponse(BaseModel):
+    root_user_id: UUID
+    max_depth: int
+    entity_count: int
+    truncated: bool = False
+    users: list[PartnershipNetworkUser]
+    trees: list[PartnershipNetworkTree]
+    partnerships: list[PartnershipNetworkEdge]
+
+
 class ProfileOut(BaseModel):
     id: UUID
     display_name: str
