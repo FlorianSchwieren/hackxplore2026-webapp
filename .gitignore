@@ -1,6 +1,42 @@
-node_modules/
-dist/
+# Env secrets (keep .env.example tracked)
 .env
 .env.local
+.env.*.local
+hackxplore2026-webapp/.env
+hackxplore2026-webapp/.env.local
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg
+
+# Node (frontend)
+node_modules/
+hackxplore2026-webapp/dist/
+hackxplore2026-webapp/node_modules/
+
+# Vite
+*.local
+
+# OS / editor
 .DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.tmp
 *.tmp.*
+
+# Obsidian local state
+.obsidian/workspace.json
+.obsidian/graph.json

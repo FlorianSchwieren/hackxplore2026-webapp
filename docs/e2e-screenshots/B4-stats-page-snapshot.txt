@@ -1,0 +1,2 @@
+- generic "Back to Map·Network StatisticsDaily Users0Total Sensors0Data Points0Registered Trees0Active Sensors0" [ref=e1] clickable [onclick]
+  - button "Back to Map" [ref=e2]

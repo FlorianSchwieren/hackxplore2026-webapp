@@ -1,0 +1,65 @@
+- generic [ref=e1] clickable [onclick]
+  - generic
+    - button "Back to Map" [ref=e2]
+    - StaticText "·"
+    - StaticText "Network Statistics"
+  - paragraph
+    - StaticText "Daily Users"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "Total Sensors"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "Data Points"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "Registered Trees"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "Active Sensors"
+  - paragraph
+    - StaticText "0%"
+  - paragraph
+    - StaticText "Districts Covered"
+  - paragraph
+    - StaticText "0"
+  - paragraph
+    - StaticText "Daily Users Over Time"
+  - image
+  - paragraph
+    - StaticText "Sensors Installed Over Time"
+  - image
+  - paragraph
+    - StaticText "Data Points Collected Per Day"
+  - image
+  - paragraph
+    - StaticText "Sensor Models"
+  - image
+  - paragraph
+    - StaticText "Sensor Status"
+  - generic
+    - image
+    - generic
+      - StaticText "0"
+      - StaticText "%"
+      - StaticText "Active"
+  - StaticText "Active"
+  - StaticText " ("
+  - StaticText "0"
+  - StaticText ")"
+  - StaticText "Inactive"
+  - StaticText " ("
+  - StaticText "0"
+  - StaticText ")"
+  - paragraph
+    - StaticText "Tree Status Distribution"
+  - image
+  - paragraph
+    - StaticText "Top Users by Assigned Trees"
+  - paragraph
+    - StaticText "Sensors by District"
+  - image

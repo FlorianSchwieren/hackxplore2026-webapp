@@ -1,0 +1,4 @@
+- generic "Back to Map·Network StatisticsDaily Users302Total Sensors1.001Data Points588Registered Trees4.377Act" [ref=e1] clickable [onclick]
+  - button "Back to Map" [ref=e2]
+  - group [ref=e4] focusable [tabindex]
+  - group [ref=e3] focusable [tabindex]

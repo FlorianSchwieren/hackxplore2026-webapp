@@ -1,0 +1,25 @@
+- generic [ref=e1] clickable [onclick]
+  - generic
+    - navigation
+      - StaticText "HackXplore 2026"
+      - link "Map" [ref=e2]
+      - link "Statistics" [ref=e3]
+      - textbox "Search trees, sensors, districts…" [ref=e5]
+    - generic
+      - generic
+        - region "Map" [ref=e7] focusable [tabindex]
+        - generic
+          - generic
+            - button "Zoom in" [ref=e8]
+            - button "Zoom out" [ref=e9]
+            - button "Drag to rotate map, click to reset north" [ref=e10]
+            - group
+              - DisclosureTriangle "Toggle attribution" [expanded=true]
+              - generic
+                - link "MapLibre" [ref=e11]
+                - link "OpenFreeMap" [ref=e12]
+                - link "© OpenMapTiles" [ref=e13]
+                - link "OpenStreetMap" [ref=e14]
+      - button "Toggle filters" [ref=e6]
+    - complementary
+      - button "More Network Stats" [ref=e4]

@@ -1,0 +1,116 @@
+- generic [ref=e1] clickable [onclick]
+  - generic
+    - navigation
+      - StaticText "HackXplore 2026"
+      - link "Map" [ref=e2]
+      - link "Statistics" [ref=e3]
+      - textbox "Search trees, sensors, districts…" [ref=e5]
+    - generic
+      - generic
+        - generic
+          - region "Map" [ref=e7] focusable [tabindex]
+          - button "Map marker" [ref=e8]
+            - image
+          - button "Map marker" [ref=e9]
+            - image
+          - button "Map marker" [ref=e10]
+            - image
+          - button "Map marker" [ref=e11]
+            - image
+          - button "Map marker" [ref=e12]
+            - image
+          - button "Map marker" [ref=e13]
+            - image
+          - button "Map marker" [ref=e14]
+            - image
+          - button "Map marker" [ref=e15]
+            - image
+          - button "Map marker" [ref=e16]
+            - image
+          - button "Map marker" [ref=e17]
+            - image
+          - button "Map marker" [ref=e18]
+            - image
+          - button "Map marker" [ref=e19]
+            - image
+          - button "Map marker" [ref=e20]
+            - image
+          - button "Map marker" [ref=e21]
+            - image
+          - button "Map marker" [ref=e22]
+            - image
+          - button "Map marker" [ref=e23]
+            - image
+          - button "Map marker" [ref=e24]
+            - image
+          - button "Map marker" [ref=e25]
+            - image
+          - button "Map marker" [ref=e26]
+            - image
+          - button "Map marker" [ref=e27]
+            - image
+          - button "Map marker" [ref=e28]
+            - image
+          - button "Map marker" [ref=e29]
+            - image
+          - button "Map marker" [ref=e30]
+            - image
+          - button "Map marker" [ref=e31]
+            - image
+          - button "Map marker" [ref=e32]
+            - image
+          - button "Map marker" [ref=e33]
+            - image
+          - button "Map marker" [ref=e34]
+            - image
+          - button "Map marker" [ref=e35]
+            - image
+          - button "Map marker" [ref=e36]
+            - image
+          - button "Map marker" [ref=e37]
+            - image
+          - button "Map marker" [ref=e38]
+            - image
+          - button "Map marker" [ref=e39]
+            - image
+          - button "Map marker" [ref=e40]
+            - image
+          - button "Map marker" [ref=e41]
+            - image
+          - button "Map marker" [ref=e42]
+            - image
+          - button "Map marker" [ref=e43]
+            - image
+          - button "Map marker" [ref=e44]
+            - image
+          - button "Map marker" [ref=e45]
+            - image
+          - button "Map marker" [ref=e46]
+            - image
+          - button "Map marker" [ref=e47]
+            - image
+          - button "Map marker" [ref=e48]
+            - image
+          - button "Map marker" [ref=e49]
+            - image
+          - button "Map marker" [ref=e50]
+            - image
+          - button "Map marker" [ref=e51]
+            - image
+          - button "Map marker" [ref=e52]
+            - image
+        - generic
+          - generic
+            - button "Zoom in" [ref=e53]
+            - button "Zoom out" [ref=e54]
+            - button "Drag to rotate map, click to reset north" [ref=e55]
+            - group
+              - DisclosureTriangle "Toggle attribution" [expanded=true]
+              - generic
+                - link "MapLibre" [ref=e56]
+                - link "OpenFreeMap" [ref=e57]
+                - link "© OpenMapTiles" [ref=e58]
+                - link "OpenStreetMap" [ref=e59]
+      - button "Toggle filters" [ref=e6]
+    - complementary
+      - button "More Network Stats" [ref=e4]
