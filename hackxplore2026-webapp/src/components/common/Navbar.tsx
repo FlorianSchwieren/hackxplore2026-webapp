@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Search, X, TreePine } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import SearchBar from '@/components/Map/SearchBar'
@@ -14,8 +14,8 @@ export default function Navbar() {
       <nav className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-4 bg-[rgba(10,10,10,0.85)] backdrop-blur-[16px] border-b border-white/[0.06]">
         {/* Logo */}
         <div className="flex items-center gap-2 shrink-0">
-          <TreePine className="w-5 h-5 text-accent-green" />
-          <span className="text-sm font-semibold text-white hidden sm:block">HackXplore 2026</span>
+          <img src="/logo.png" alt="CommuniTree logo" className="w-7 h-7 object-contain" />
+          <span className="text-sm font-semibold text-white hidden sm:block">CommuniTree</span>
         </div>
 
         {/* Nav tabs */}
